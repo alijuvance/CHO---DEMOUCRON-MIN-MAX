@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   SYSTÈME DE DESIGN — Variables CSS globales
+   Palette de couleurs premium inspirée des SaaS modernes (Linear, Vercel)
+   ========================================================================== */
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Palette d'accentuation */
+  --accent-primary: #6366f1;     /* Indigo vif */
+  --accent-secondary: #8b5cf6;   /* Violet */
+  --accent-glow: rgba(99, 102, 241, 0.15);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+/* ==========================================================================
+   ANIMATIONS GLOBALES
+   Utilisées dans toute l'application (auth, transitions, apparitions)
+   ========================================================================== */
+
+/* Apparition douce depuis le bas */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Apparition simple (opacité) */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Pulsation douce pour le loader / glow */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.05); }
+}
+
+/* Rotation infinie pour le spinner de chargement */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mouvement subtil des orbes décoratifs en arrière-plan */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(30px, -20px) scale(1.05); }
+  66%      { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes float-reverse {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-25px, 20px) scale(0.95); }
+  66%      { transform: translate(20px, -15px) scale(1.05); }
+}
+
+/* Classes utilitaires d'animation réutilisables */
+.animate-fade-in-up {
+  animation: fade-in-up 0.7s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 12s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 15s ease-in-out infinite;
+}
+
+/* Délais d'animation échelonnés (stagger effect) */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.5s; }

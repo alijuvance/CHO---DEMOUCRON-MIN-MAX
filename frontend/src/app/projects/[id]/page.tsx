@@ -24,10 +24,7 @@ export default function ProjectDetail() {
   const setTasks = useProjectStore(state => state.setTasks);
   const setDependencies = useProjectStore(state => state.setDependencies);
 
-  const { data: project, isLoading } = useQuery({
-    queryKey: ['project', projectId],
-    queryFn: () => fetchProjectDetails(projectId),
-  });
+  const { data: project, isLoading } = useQuery({ queryKey: ['project', projectId], queryFn: () => fetchProjectDetails(projectId) });
 
   useEffect(() => {
     if (project) {
@@ -38,53 +35,30 @@ export default function ProjectDetail() {
 
   const refreshProject = () => queryClient.invalidateQueries({ queryKey: ['project', projectId] });
 
-  const addTaskMutation = useMutation({
-    mutationFn: createTask,
-    onSuccess: () => { setTaskName(''); setTaskDuration(''); refreshProject(); },
-  });
-
-  const removeTaskMutation = useMutation({
-    mutationFn: deleteTask,
-    onSuccess: () => refreshProject(),
-  });
-
+  const addTaskMutation = useMutation({ mutationFn: createTask, onSuccess: () => { setTaskName(''); setTaskDuration(''); refreshProject(); } });
+  const removeTaskMutation = useMutation({ mutationFn: deleteTask, onSuccess: () => refreshProject() });
+  
   const addDependencyMutation = useMutation({
     mutationFn: createDependency,
     onSuccess: () => { setSourceTaskId(''); setTargetTaskId(''); setErrorMsg(null); refreshProject(); },
-    onError: (error: any) => setErrorMsg(error.message),
+    onError: (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => setErrorMsg(error.message),
   });
-
-  const removeDependencyMutation = useMutation({
-    mutationFn: deleteDependency,
-    onSuccess: () => refreshProject(),
-  });
-
+  
+  const removeDependencyMutation = useMutation({ mutationFn: deleteDependency, onSuccess: () => refreshProject() });
+  
   const analysisMutation = useMutation({
     mutationFn: runAnalysis,
     onSuccess: () => { setErrorMsg(null); refreshProject(); setActiveTab('pert'); },
-    onError: (error: any) => setErrorMsg(error.message),
+    onError: (error: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => setErrorMsg(error.message),
   });
 
-  // Export CSV Function
   const exportToCSV = () => {
     if (!project || !project.tasks || project.tasks.length === 0) return;
-    
     const headers = ["ID", "Nom", "Durée", "Début au plus tôt (MIN)", "Fin au plus tôt", "Début au plus tard (MAX)", "Fin au plus tard", "Marge Totale", "Marge Libre", "Chemin Critique"];
-    
-    const rows = project.tasks.map((t: any) => [
-      t.id,
-      t.name,
-      t.duration,
-      t.earliestStart ?? '',
-      t.earliestFinish ?? '',
-      t.latestStart ?? '',
-      t.latestFinish ?? '',
-      t.totalMargin ?? '',
-      t.freeMargin ?? '',
-      t.isCritical ? 'OUI' : 'NON'
+    const rows = project.tasks.map((t: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => [
+      t.id, t.name, t.duration, t.earliestStart ?? '', t.earliestFinish ?? '', t.latestStart ?? '', t.latestFinish ?? '', t.totalMargin ?? '', t.freeMargin ?? '', t.isCritical ? 'OUI' : 'NON'
     ]);
-    
-    const csvContent = [headers.join(','), ...rows.map((row: any[]) => row.join(','))].join('\n');
+    const csvContent = [headers.join(','), ...rows.map((row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */[]) => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -95,190 +69,165 @@ export default function ProjectDetail() {
     document.body.removeChild(link);
   };
 
-  if (isLoading) return <div className="p-12 text-center text-slate-500 font-medium">Chargement du projet...</div>;
-  if (!project) return <div className="p-12 text-center text-red-500">Projet introuvable.</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center text-gray-400 font-medium">Chargement...</div>;
+  if (!project) return <div className="min-h-screen bg-[#fafafa] flex items-center justify-center text-red-500">Projet introuvable.</div>;
 
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!taskName || !taskDuration) return;
-    addTaskMutation.mutate({ name: taskName, duration: Number(taskDuration), projectId });
-  };
-
-  const handleAddDependency = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!sourceTaskId || !targetTaskId) return;
-    addDependencyMutation.mutate({ sourceTaskId: Number(sourceTaskId), targetTaskId: Number(targetTaskId), projectId });
-  };
-
-  // Check if analysis has been run
+  const handleAddTask = (e: React.FormEvent) => { e.preventDefault(); if (!taskName || !taskDuration) return; addTaskMutation.mutate({ name: taskName, duration: Number(taskDuration), projectId }); };
+  const handleAddDependency = (e: React.FormEvent) => { e.preventDefault(); if (!sourceTaskId || !targetTaskId) return; addDependencyMutation.mutate({ sourceTaskId: Number(sourceTaskId), targetTaskId: Number(targetTaskId), projectId }); };
   const hasBeenAnalyzed = project.tasks && project.tasks.length > 0 && project.tasks[0].earliestStart !== null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-    <div className="container mx-auto p-4 md:p-8 max-w-7xl">
-      {/* En-tête */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div>
-          <Link href="/projects" className="text-sm font-medium text-blue-500 hover:text-blue-700 mb-2 inline-block">← Retour aux Projets</Link>
-          <h1 className="text-3xl font-extrabold text-slate-900">{project.name}</h1>
-          {project.description && <p className="text-slate-600 mt-1">{project.description}</p>}
-        </div>
-        
-        <div className="flex gap-2">
-          {hasBeenAnalyzed && (
+    <div className="min-h-screen bg-[#fafafa] text-gray-900 font-sans selection:bg-indigo-100 pb-20">
+      
+      {/* Navbar Premium */}
+      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
+          <Link href="/projects" className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
+          </Link>
+          <div className="w-px h-6 bg-gray-200 hidden sm:block"></div>
+          <h1 className="text-lg font-bold text-gray-900 tracking-tight truncate">{project.name}</h1>
+          
+          <div className="ml-auto flex items-center gap-3">
+            {hasBeenAnalyzed && (
+              <button onClick={exportToCSV} className="hidden sm:flex items-center gap-2 text-xs font-semibold text-gray-600 bg-white border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-colors shadow-sm">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                Export CSV
+              </button>
+            )}
             <button 
-              onClick={exportToCSV}
-              className="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-3 rounded-lg font-bold shadow-sm transition-all flex items-center gap-2"
-              title="Exporter les dates et marges en fichier Excel/CSV"
+              onClick={() => analysisMutation.mutate(projectId)} 
+              disabled={project.tasks?.length === 0 || analysisMutation.isPending}
+              className="flex items-center gap-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg transition-colors shadow-sm shadow-indigo-200 disabled:opacity-50"
             >
-              Exporter (CSV)
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" /></svg>
+              {analysisMutation.isPending ? 'Analyse...' : 'Lancer l\'Analyse'}
             </button>
-          )}
-          <button 
-            onClick={() => analysisMutation.mutate(projectId)}
-            disabled={analysisMutation.isPending || project.tasks?.length === 0}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {analysisMutation.isPending ? 'Calcul en cours...' : '▶ Lancer l\'Analyse Min-Max'}
-          </button>
+          </div>
         </div>
-      </div>
+      </nav>
 
+      {/* Messages Erreur Globaux */}
       {errorMsg && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-md">
-          <p className="text-red-700 font-semibold">Erreur Algorithmique :</p>
-          <p className="text-red-600">{errorMsg}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm flex items-start gap-3">
+            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <p className="leading-relaxed">{errorMsg}</p>
+          </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 mb-6 space-x-8">
-        {(['data', 'gantt', 'pert'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => {
-              if ((tab === 'gantt' || tab === 'pert') && !hasBeenAnalyzed) {
-                alert("Veuillez lancer l'analyse Min-Max avant d'accéder aux vues visuelles.");
-                return;
-              }
-              setActiveTab(tab);
-            }}
-            className={`pb-3 text-lg font-semibold transition-colors ${
-              activeTab === tab 
-                ? 'border-b-2 border-blue-600 text-blue-600' 
-                : ((tab === 'gantt' || tab === 'pert') && !hasBeenAnalyzed) ? 'text-slate-300 cursor-not-allowed' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {tab === 'data' ? 'Données' : tab === 'gantt' ? 'Gantt' : 'PERT'}
-          </button>
-        ))}
+      {/* Onglets Premium (Pills) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 mb-6">
+        <div className="inline-flex bg-gray-100/80 p-1 rounded-xl shadow-inner">
+          <button onClick={() => setActiveTab('data')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'data' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Données</button>
+          <button onClick={() => setActiveTab('gantt')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Gantt</button>
+          <button onClick={() => setActiveTab('pert')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'pert' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Réseau PERT</button>
+        </div>
       </div>
 
-      {activeTab === 'data' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold mb-4 flex items-center justify-between">
-              Tâches
-              <span className="bg-slate-100 text-slate-600 text-sm px-2 py-1 rounded-full">{project.tasks?.length || 0}</span>
-            </h2>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 animate-fade-in-up">
+        {activeTab === 'data' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <form onSubmit={handleAddTask} className="flex gap-2 mb-6">
-              <input type="text" value={taskName} onChange={(e) => setTaskName(e.target.value)} placeholder="Nom (ex: A)" className="flex-1 border p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required />
-              <input type="number" min="1" value={taskDuration} onChange={(e) => setTaskDuration(e.target.value === '' ? '' : Number(e.target.value))} placeholder="Durée" className="w-24 border p-2 rounded-md focus:ring-2 focus:ring-blue-500 outline-none" required />
-              <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded-md font-semibold hover:bg-slate-700">+</button>
-            </form>
+            {/* Tâches */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                  <h2 className="font-bold text-gray-900">Tâches</h2>
+                  <span className="text-xs font-semibold bg-gray-200 text-gray-600 px-2.5 py-1 rounded-full">{project.tasks?.length || 0}</span>
+                </div>
+                <div className="p-6 border-b border-gray-100">
+                  <form onSubmit={handleAddTask} className="flex gap-3">
+                    <input type="text" value={taskName} onChange={e=>setTaskName(e.target.value)} placeholder="Nom (ex: A)" className="w-1/2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all" required />
+                    <input type="number" value={taskDuration} onChange={e=>setTaskDuration(Number(e.target.value) || '')} placeholder="Durée" min="1" className="w-1/4 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none transition-all" required />
+                    <button type="submit" className="w-1/4 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">Ajouter</button>
+                  </form>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-white border-b border-gray-100 text-gray-400 uppercase text-[11px] font-semibold tracking-wider">
+                      <tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">Nom</th><th className="px-6 py-3">Durée</th><th className="px-6 py-3"></th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {project.tasks?.map((t: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
+                        <tr key={t.id} className="hover:bg-gray-50/50 transition-colors group">
+                          <td className="px-6 py-3 font-mono text-gray-400">{t.id}</td>
+                          <td className="px-6 py-3 font-medium text-gray-900">{t.name}</td>
+                          <td className="px-6 py-3 text-gray-600">{t.duration}j</td>
+                          <td className="px-6 py-3 text-right">
+                            <button onClick={() => removeTaskMutation.mutate(t.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-sm">
-                <thead>
-                  <tr className="border-b-2 border-slate-200 text-slate-600">
-                    <th className="p-2">Nom</th>
-                    <th className="p-2 text-center">Durée</th>
-                    <th className="p-2 text-center" title="Début au plus tôt">MIN</th>
-                    <th className="p-2 text-center" title="Début au plus tard">MAX</th>
-                    <th className="p-2 text-center" title="Marge Totale / Libre">MT/ML</th>
-                    <th className="p-2 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {project.tasks?.map((task: any) => (
-                    <tr key={task.id} className={`border-b border-slate-100 hover:bg-slate-50 ${task.isCritical ? 'bg-red-50' : ''}`}>
-                      <td className="p-2 font-bold">{task.name}</td>
-                      <td className="p-2 text-center">{task.duration}</td>
-                      <td className="p-2 text-center">{task.earliestStart !== null ? task.earliestStart : '-'}</td>
-                      <td className="p-2 text-center">{task.latestStart !== null ? task.latestStart : '-'}</td>
-                      <td className="p-2 text-center font-mono text-xs">
-                        {task.totalMargin !== null ? `${task.totalMargin} / ${task.freeMargin}` : '-'}
-                      </td>
-                      <td className="p-2 text-right">
-                        <button onClick={() => removeTaskMutation.mutate(task.id)} className="text-red-500 hover:text-red-700 font-medium">✕</button>
-                      </td>
-                    </tr>
-                  ))}
-                  {project.tasks?.length === 0 && <tr><td colSpan={6} className="p-4 text-center text-slate-500">Ajoutez une tâche.</td></tr>}
-                </tbody>
-              </table>
+            {/* Dépendances */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-white rounded-2xl shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] border border-gray-100 overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                  <h2 className="font-bold text-gray-900">Dépendances</h2>
+                  <span className="text-xs font-semibold bg-gray-200 text-gray-600 px-2.5 py-1 rounded-full">{project.dependencies?.length || 0}</span>
+                </div>
+                <div className="p-6 border-b border-gray-100">
+                  <form onSubmit={handleAddDependency} className="flex gap-3">
+                    <select value={sourceTaskId} onChange={e=>setSourceTaskId(Number(e.target.value))} className="w-2/5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none text-gray-700" required>
+                      <option value="">Avant...</option>
+                      {project.tasks?.map((t:any /* eslint-disable-line @typescript-eslint/no-explicit-any */)=><option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <div className="flex items-center text-gray-300"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg></div>
+                    <select value={targetTaskId} onChange={e=>setTargetTaskId(Number(e.target.value))} className="w-2/5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 outline-none text-gray-700" required>
+                      <option value="">Après...</option>
+                      {project.tasks?.map((t:any /* eslint-disable-line @typescript-eslint/no-explicit-any */)=><option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <button type="submit" className="w-1/5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">Lier</button>
+                  </form>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-white border-b border-gray-100 text-gray-400 uppercase text-[11px] font-semibold tracking-wider">
+                      <tr><th className="px-6 py-3">Source</th><th className="px-6 py-3">Cible</th><th className="px-6 py-3"></th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {project.dependencies?.map((d: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => {
+                        const s = project.tasks?.find((t:any /* eslint-disable-line @typescript-eslint/no-explicit-any */)=>t.id === d.sourceTaskId);
+                        const t = project.tasks?.find((t:any /* eslint-disable-line @typescript-eslint/no-explicit-any */)=>t.id === d.targetTaskId);
+                        return (
+                        <tr key={d.id} className="hover:bg-gray-50/50 transition-colors group">
+                          <td className="px-6 py-3"><span className="font-medium text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-xs">{s?.name || d.sourceTaskId}</span></td>
+                          <td className="px-6 py-3"><span className="font-medium text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-xs">{t?.name || d.targetTaskId}</span></td>
+                          <td className="px-6 py-3 text-right">
+                            <button onClick={() => removeDependencyMutation.mutate(d.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                          </td>
+                        </tr>
+                      )})}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h2 className="text-xl font-bold mb-4 flex items-center justify-between">
-              Dépendances
-              <span className="bg-slate-100 text-slate-600 text-sm px-2 py-1 rounded-full">{project.dependencies?.length || 0}</span>
-            </h2>
-            
-            <form onSubmit={handleAddDependency} className="flex gap-2 mb-6 items-end">
-              <div className="flex-1">
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Source</label>
-                <select value={sourceTaskId} onChange={(e) => setSourceTaskId(e.target.value)} className="w-full border p-2 rounded-md bg-white" required>
-                  <option value="" disabled>Choix...</option>
-                  {project.tasks?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-              <div className="text-slate-400 font-bold px-1 py-2">→</div>
-              <div className="flex-1">
-                <label className="text-xs font-semibold text-slate-500 block mb-1">Cible</label>
-                <select value={targetTaskId} onChange={(e) => setTargetTaskId(e.target.value)} className="w-full border p-2 rounded-md bg-white" required>
-                  <option value="" disabled>Choix...</option>
-                  {project.tasks?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              </div>
-              <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded-md font-semibold hover:bg-slate-700">+</button>
-            </form>
-
-            <ul className="space-y-2">
-              {project.dependencies?.map((dep: any) => {
-                const source = project.tasks?.find((t: any) => t.id === dep.sourceTaskId);
-                const target = project.tasks?.find((t: any) => t.id === dep.targetTaskId);
-                return (
-                  <li key={dep.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <span className="font-medium text-slate-700 text-sm">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{source?.name || '?'}</span> 
-                      <span className="mx-2 text-slate-400">avant</span> 
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">{target?.name || '?'}</span>
-                    </span>
-                    <button onClick={() => removeDependencyMutation.mutate(dep.id)} className="text-red-500 hover:text-red-700 text-sm font-medium">✕</button>
-                  </li>
-                );
-              })}
-            </ul>
+        {/* GANTT & PERT (Si tâches existent) */}
+        {activeTab === 'gantt' && project.tasks?.length === 0 && <div className="p-16 text-center text-gray-400 bg-white rounded-2xl shadow-sm border border-gray-100 border-dashed">Ajoutez des tâches puis lancez l&apos;analyse pour visualiser le diagramme.</div>}
+        {activeTab === 'gantt' && project.tasks?.length > 0 && (
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] animate-fade-in overflow-x-auto">
+            <GanttChart />
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'gantt' && hasBeenAnalyzed && (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in">
-          <GanttChart />
-        </div>
-      )}
-
-      {activeTab === 'pert' && hasBeenAnalyzed && (
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in">
-          <PertDiagram />
-        </div>
-      )}
-    </div>
+        {activeTab === 'pert' && project.tasks?.length === 0 && <div className="p-16 text-center text-gray-400 bg-white rounded-2xl shadow-sm border border-gray-100 border-dashed">Ajoutez des tâches puis lancez l&apos;analyse pour visualiser le diagramme.</div>}
+        {activeTab === 'pert' && project.tasks?.length > 0 && (
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] animate-fade-in overflow-hidden" style={{ height: '600px' }}>
+            <PertDiagram />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

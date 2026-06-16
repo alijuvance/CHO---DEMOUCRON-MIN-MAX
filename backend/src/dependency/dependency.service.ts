@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Dependency } from './dependency.entity';
 import { CreateDependencyDto } from './dto/create-dependency.dto';
 import { Task } from '../task/task.entity';
+import { DemoucronEngine } from '../analysis/engine/demoucron.engine';
 
 @Injectable()
 export class DependencyService {
@@ -26,6 +27,16 @@ export class DependencyService {
 
     const exists = await this.repo.findOne({ where: { sourceTaskId: dto.sourceTaskId, targetTaskId: dto.targetTaskId }});
     if (exists) throw new BadRequestException('Cette dépendance existe déjà');
+
+    // Vérification de cycle
+    const tasks = await this.taskRepo.find({ where: { projectId: dto.projectId } });
+    const dependencies = await this.repo.find({ where: { projectId: dto.projectId } });
+    const simulatedDependency = this.repo.create(dto);
+    const newDependencies = [...dependencies, simulatedDependency];
+
+    if (DemoucronEngine.detectCycle(tasks, newDependencies)) {
+      throw new BadRequestException("Cette dépendance crée un cycle (boucle infinie). Ordonnancement impossible.");
+    }
 
     const dependency = this.repo.create(dto);
     return this.repo.save(dependency);

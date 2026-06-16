@@ -13,11 +13,14 @@ import { Dependency } from './dependency/dependency.entity';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
-      // @ts-ignore
-      type: 'better-sqlite3',
-      database: 'database.sqlite',
+      type: 'postgres',
+      host: process.env.DATABASE_HOST || 'localhost',
+      port: parseInt(process.env.DATABASE_PORT || '5432'),
+      username: process.env.DATABASE_USER || 'root',
+      password: process.env.DATABASE_PASSWORD || 'password',
+      database: process.env.DATABASE_NAME || 'demoucron_db',
       entities: [Project, Task, Dependency],
-      synchronize: true, // Auto-create tables for portability
+      synchronize: true, // Use migrations in real prod, true is OK here for auto-schema
     }),
     ProjectModule,
     TaskModule,

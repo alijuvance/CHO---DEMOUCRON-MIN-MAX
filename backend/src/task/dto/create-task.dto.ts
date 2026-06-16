@@ -1,22 +1,35 @@
 import { IsString, IsInt, Min, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTaskDto {
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Nom de la tâche',
+    example: 'Tâche A',
+  })
   @IsString()
   name: string;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({
+    description: 'Description détaillée de la tâche (facultatif)',
+    example: 'Préparation du terrain avant le début des travaux.',
+  })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiProperty({ description: 'Durée de la tâche (minimum 1)' })
+  @ApiProperty({
+    description: 'Durée de la tâche en unités de temps (minimum 1)',
+    example: 5,
+    minimum: 1,
+  })
   @IsInt()
   @Min(1)
   duration: number;
 
-  @ApiProperty()
+  @ApiProperty({
+    description: 'Identifiant du projet auquel cette tâche est rattachée',
+    example: 1,
+  })
   @IsInt()
   projectId: number;
 }

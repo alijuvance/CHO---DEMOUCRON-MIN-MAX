@@ -7,13 +7,14 @@ import { fetchProjectDetails, createTask, deleteTask, createDependency, deleteDe
 import { useProjectStore } from '@/store/projectStore';
 import PertDiagram from '@/components/graph/PertDiagram';
 import GanttChart from '@/components/gantt/GanttChart';
+import DemoucronLevels from '@/components/graph/DemoucronLevels';
 
 export default function ProjectDetail() {
   const params = useParams();
   const projectId = Number(params.id);
   const queryClient = useQueryClient();
   
-  const [activeTab, setActiveTab] = useState<'data' | 'gantt' | 'pert'>('data');
+  const [activeTab, setActiveTab] = useState<'data' | 'demoucron' | 'gantt' | 'pert'>('data');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [taskName, setTaskName] = useState('');
@@ -121,6 +122,7 @@ export default function ProjectDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 mb-6">
         <div className="inline-flex bg-gray-100/80 p-1 rounded-xl shadow-inner">
           <button onClick={() => setActiveTab('data')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'data' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Données</button>
+          <button onClick={() => setActiveTab('demoucron')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'demoucron' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Niveaux Demoucron</button>
           <button onClick={() => setActiveTab('gantt')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'gantt' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Gantt</button>
           <button onClick={() => setActiveTab('pert')} className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${activeTab === 'pert' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Réseau PERT</button>
         </div>
@@ -213,7 +215,13 @@ export default function ProjectDetail() {
           </div>
         )}
 
-        {/* GANTT & PERT (Si tâches existent) */}
+        {/* VUES (Si tâches existent) */}
+        {activeTab === 'demoucron' && project.tasks?.length === 0 && <div className="p-16 text-center text-gray-400 bg-white rounded-2xl shadow-sm border border-gray-100 border-dashed">Ajoutez des tâches puis lancez l'analyse pour visualiser le diagramme.</div>}
+        {activeTab === 'demoucron' && project.tasks?.length > 0 && (
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] animate-fade-in">
+            <DemoucronLevels />
+          </div>
+        )}
         {activeTab === 'gantt' && project.tasks?.length === 0 && <div className="p-16 text-center text-gray-400 bg-white rounded-2xl shadow-sm border border-gray-100 border-dashed">Ajoutez des tâches puis lancez l&apos;analyse pour visualiser le diagramme.</div>}
         {activeTab === 'gantt' && project.tasks?.length > 0 && (
           <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] animate-fade-in">

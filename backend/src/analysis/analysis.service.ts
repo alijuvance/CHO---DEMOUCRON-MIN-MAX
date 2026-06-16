@@ -17,18 +17,18 @@ export class AnalysisService {
 
   async runAnalysis(projectId: number) {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project) throw new NotFoundException('Projet introuvable');
 
     const tasks = await this.taskRepo.find({ where: { projectId } });
     const dependencies = await this.depRepo.find({ where: { projectId } });
 
-    if (tasks.length === 0) throw new BadRequestException('Project has no tasks');
+    if (tasks.length === 0) throw new BadRequestException('Le projet ne contient aucune tâche');
 
     let analyzedTasks;
     try {
       analyzedTasks = DemoucronEngine.run(tasks, dependencies);
     } catch (error: any) {
-      throw new BadRequestException(error.message || 'Error running algorithmic analysis');
+      throw new BadRequestException(error.message || "Erreur lors de l'analyse algorithmique");
     }
 
     // Utilisation d'une transaction pour garantir l'intégrité de la mise à jour massive
@@ -43,7 +43,7 @@ export class AnalysisService {
       return analyzedTasks;
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      throw new BadRequestException('Database error during save');
+      throw new BadRequestException("Erreur de base de données lors de l'enregistrement");
     } finally {
       await queryRunner.release();
     }

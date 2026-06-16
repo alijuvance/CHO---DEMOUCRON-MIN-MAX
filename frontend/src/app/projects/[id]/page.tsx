@@ -55,8 +55,8 @@ export default function ProjectDetail() {
   const exportToCSV = () => {
     if (!project || !project.tasks || project.tasks.length === 0) return;
     const headers = ["ID", "Nom", "Durée", "Début au plus tôt (MIN)", "Fin au plus tôt", "Début au plus tard (MAX)", "Fin au plus tard", "Marge Totale", "Marge Libre", "Chemin Critique"];
-    const rows = project.tasks.map((t: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => [
-      t.id, t.name, t.duration, t.earliestStart ?? '', t.earliestFinish ?? '', t.latestStart ?? '', t.latestFinish ?? '', t.totalMargin ?? '', t.freeMargin ?? '', t.isCritical ? 'OUI' : 'NON'
+    const rows = project.tasks.map((t: any /* eslint-disable-line @typescript-eslint/no-explicit-any */, index: number) => [
+      index + 1, t.name, t.duration, t.earliestStart ?? '', t.earliestFinish ?? '', t.latestStart ?? '', t.latestFinish ?? '', t.totalMargin ?? '', t.freeMargin ?? '', t.isCritical ? 'OUI' : 'NON'
     ]);
     const csvContent = [headers.join(','), ...rows.map((row: any /* eslint-disable-line @typescript-eslint/no-explicit-any */[]) => row.join(','))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -150,9 +150,9 @@ export default function ProjectDetail() {
                       <tr><th className="px-6 py-3">ID</th><th className="px-6 py-3">Nom</th><th className="px-6 py-3">Durée</th><th className="px-6 py-3"></th></tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {project.tasks?.map((t: any /* eslint-disable-line @typescript-eslint/no-explicit-any */) => (
+                      {project.tasks?.map((t: any /* eslint-disable-line @typescript-eslint/no-explicit-any */, index: number) => (
                         <tr key={t.id} className="hover:bg-gray-50/50 transition-colors group">
-                          <td className="px-6 py-3 font-mono text-gray-400">{t.id}</td>
+                          <td className="px-6 py-3 font-mono text-gray-400">{index + 1}</td>
                           <td className="px-6 py-3 font-medium text-gray-900">{t.name}</td>
                           <td className="px-6 py-3 text-gray-600">{t.duration}j</td>
                           <td className="px-6 py-3 text-right">
@@ -216,7 +216,7 @@ export default function ProjectDetail() {
         {/* GANTT & PERT (Si tâches existent) */}
         {activeTab === 'gantt' && project.tasks?.length === 0 && <div className="p-16 text-center text-gray-400 bg-white rounded-2xl shadow-sm border border-gray-100 border-dashed">Ajoutez des tâches puis lancez l&apos;analyse pour visualiser le diagramme.</div>}
         {activeTab === 'gantt' && project.tasks?.length > 0 && (
-          <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] animate-fade-in overflow-x-auto">
+          <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] animate-fade-in">
             <GanttChart />
           </div>
         )}

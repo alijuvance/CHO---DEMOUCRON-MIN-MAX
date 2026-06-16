@@ -19,7 +19,7 @@ export class ProjectService {
 
   async findOne(id: number) {
     const project = await this.repo.findOne({ where: { id }, relations: { tasks: true, dependencies: true } });
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project) throw new NotFoundException('Projet introuvable');
     return project;
   }
 

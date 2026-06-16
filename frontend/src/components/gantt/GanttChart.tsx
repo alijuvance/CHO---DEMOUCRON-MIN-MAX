@@ -7,7 +7,7 @@ export default function GanttChart() {
 
   const chartData = useMemo(() => {
     if (!tasks || tasks.length === 0) return null;
-    const maxDuration = Math.max(...tasks.map(t => t.earliestFinish || 0));
+    const maxDuration = Math.max(...tasks.map(t => t.latestFinish || t.earliestFinish || 0));
     const sortedTasks = [...tasks].sort((a, b) => {
       if (a.earliestStart !== b.earliestStart) return (a.earliestStart || 0) - (b.earliestStart || 0);
       return (a.totalMargin || 0) - (b.totalMargin || 0);
@@ -18,92 +18,165 @@ export default function GanttChart() {
   if (!chartData) return null;
   const { maxDuration, sortedTasks } = chartData;
 
-  const dayWidth = 40; 
-  const headerHeight = 40;
+  const dayWidth = 45; 
+  const headerHeight = 50;
   const rowHeight = 48;
-  const totalWidth = maxDuration * dayWidth;
+  const svgWidth = (maxDuration + 2) * dayWidth; // Extra space
   const totalHeight = sortedTasks.length * rowHeight + headerHeight;
 
   return (
-    <div className="w-full overflow-x-auto pb-4">
-      <svg width={totalWidth + 120} height={totalHeight + 20} className="font-sans text-sm">
-        <g className="text-gray-400 text-xs font-medium">
-          {Array.from({ length: maxDuration + 1 }).map((_, i) => (
-            <g key={i}>
-              <line x1={100 + i * dayWidth} y1={headerHeight} x2={100 + i * dayWidth} y2={totalHeight} stroke="#f3f4f6" strokeWidth="1" strokeDasharray="4 4" />
-              <text x={100 + i * dayWidth} y={24} textAnchor="middle">{i}</text>
-            </g>
-          ))}
-        </g>
-        {sortedTasks.map((task, index) => {
-          const y = headerHeight + index * rowHeight;
-          const es = task.earliestStart || 0;
-          const ef = task.earliestFinish || 0;
-          const duration = ef - es;
-          const barX = 100 + es * dayWidth;
-          const barWidth = duration * dayWidth;
-          const isCritical = task.isCritical;
-          const marginWidth = (task.freeMargin || 0) * dayWidth;
-
-          return (
-            <g key={task.id} className="group">
-              <rect x="0" y={y} width={totalWidth + 100} height={rowHeight} fill="transparent" className="hover:fill-gray-50/50 transition-colors" />
-              <text x="80" y={y + 28} textAnchor="end" className="font-semibold text-gray-700 fill-current">{task.name}</text>
-              {marginWidth > 0 && (
-                <line x1={barX + barWidth} y1={y + 24} x2={barX + barWidth + marginWidth} y2={y + 24} stroke="#cbd5e1" strokeWidth="2" strokeDasharray="4 4" />
-              )}
-              <rect x={barX} y={y + 12} width={Math.max(barWidth, 4)} height={24} rx="12" className={`${isCritical ? 'fill-rose-500' : 'fill-indigo-500'} shadow-sm`} opacity="0.9" />
-              {barWidth > 30 && (
-                <text x={barX + barWidth / 2} y={y + 28} textAnchor="middle" className="text-[10px] font-bold fill-white pointer-events-none">{task.duration}j</text>
-              )}
-            </g>
-          );
-        })}
+    <div className="flex border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm w-full font-sans text-sm" style={{ height: totalHeight + 2 }}>
+      
+      {/* Panneau Gauche : Tableau (Fixe) */}
+      <div className="w-[380px] shrink-0 border-r border-gray-200 bg-white z-10 flex flex-col">
+        {/* Header Tableau */}
+        <div className="flex items-center h-[50px] border-b border-gray-200 bg-gray-50/80 px-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider shrink-0">
+          <div className="w-10">N°</div>
+          <div className="flex-1">Nom de la Tâche</div>
+          <div className="w-14 text-center">Durée</div>
+          <div className="w-16 text-center" title="Début au plus tôt">Début</div>
+          <div className="w-16 text-center" title="Fin au plus tôt">Fin</div>
+        </div>
         
-        {/* Flèches de dépendances */}
-        {dependencies?.map((dep) => {
-          const sourceTask = sortedTasks.find(t => t.id === dep.sourceTaskId);
-          const targetTask = sortedTasks.find(t => t.id === dep.targetTaskId);
-          if (!sourceTask || !targetTask) return null;
+        {/* Lignes du Tableau */}
+        <div className="flex-1 overflow-hidden bg-white">
+          {sortedTasks.map((task, index) => (
+            <div key={`row-${task.id}`} className="flex items-center px-4 border-b border-gray-50 hover:bg-gray-50/50 transition-colors" style={{ height: `${rowHeight}px` }}>
+              <div className="w-10 font-mono text-gray-400 text-xs">{index + 1}</div>
+              <div className="flex-1 font-medium text-gray-800 truncate pr-2" title={task.name}>{task.name}</div>
+              <div className="w-14 text-center text-gray-600 font-medium">{task.duration}j</div>
+              <div className="w-16 text-center text-gray-500">J{task.earliestStart}</div>
+              <div className="w-16 text-center text-gray-500">J{task.earliestFinish}</div>
+            </div>
+          ))}
+        </div>
+      </div>
 
-          const sourceIndex = sortedTasks.findIndex(t => t.id === dep.sourceTaskId);
-          const targetIndex = sortedTasks.findIndex(t => t.id === dep.targetTaskId);
+      {/* Panneau Droit : SVG Gantt Chart (Défilable) */}
+      <div className="flex-1 overflow-x-auto relative bg-[#fafafa] custom-scrollbar">
+        <svg width={svgWidth} height={totalHeight} className="block">
+          <defs>
+            <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <polygon points="0,0 6,3 0,6" fill="#94a3b8" />
+            </marker>
+            <marker id="arrowhead-critical" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+              <polygon points="0,0 6,3 0,6" fill="#f43f5e" />
+            </marker>
+          </defs>
 
-          const sourceEs = sourceTask.earliestStart || 0;
-          const sourceDuration = sourceTask.duration || 0;
-          const targetEs = targetTask.earliestStart || 0;
+          {/* Grille Temporelle */}
+          <g>
+            <rect x="0" y="0" width={svgWidth} height={headerHeight} fill="#f9fafb" className="border-b border-gray-200" />
+            <line x1="0" y1={headerHeight} x2={svgWidth} y2={headerHeight} stroke="#e5e7eb" strokeWidth="1" />
+            
+            {Array.from({ length: maxDuration + 2 }).map((_, i) => (
+              <g key={`grid-${i}`}>
+                {/* Colonnes alternées */}
+                {i % 2 !== 0 && (
+                  <rect x={i * dayWidth} y={headerHeight} width={dayWidth} height={totalHeight - headerHeight} fill="#f1f5f9" opacity="0.4" />
+                )}
+                {/* Lignes verticales de grille */}
+                <line x1={i * dayWidth} y1={headerHeight} x2={i * dayWidth} y2={totalHeight} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="2 2" />
+                
+                {/* En-tête des jours */}
+                <text x={i * dayWidth + dayWidth / 2} y={30} textAnchor="middle" className="text-[11px] font-semibold fill-gray-500">J{i}</text>
+              </g>
+            ))}
+          </g>
 
-          // Coordonnées de départ (fin de la tâche source)
-          const startX = 100 + (sourceEs + sourceDuration) * dayWidth;
-          const startY = headerHeight + sourceIndex * rowHeight + 24;
+          {/* Marges et Barres des Tâches */}
+          {sortedTasks.map((task, index) => {
+            const y = headerHeight + index * rowHeight;
+            const es = task.earliestStart || 0;
+            const duration = task.duration || 0;
+            const freeMargin = task.freeMargin || 0;
+            const totalMargin = task.totalMargin || 0;
+            
+            const barX = es * dayWidth;
+            const barWidth = duration * dayWidth;
+            const freeMarginWidth = freeMargin * dayWidth;
+            const totalMarginWidth = totalMargin * dayWidth;
+            
+            const isCritical = task.isCritical;
+            const isMilestone = duration === 0;
 
-          // Coordonnées d'arrivée (début de la tâche cible)
-          const endX = 100 + targetEs * dayWidth;
-          const endY = headerHeight + targetIndex * rowHeight + 24;
+            return (
+              <g key={`bar-${task.id}`} className="group">
+                {/* Hover line background */}
+                <rect x="0" y={y} width={svgWidth} height={rowHeight} fill="transparent" className="hover:fill-black/5 transition-colors cursor-default" />
+                
+                {/* Marge Totale (Ligne continue) */}
+                {totalMarginWidth > 0 && (
+                  <rect x={barX + barWidth} y={y + rowHeight/2 - 2} width={totalMarginWidth} height={4} rx="2" fill="#cbd5e1" opacity="0.6" />
+                )}
 
-          // Dessin d'un chemin en "S" ou en angle droit
-          const isCriticalEdge = sourceTask.isCritical && targetTask.isCritical;
-          const strokeColor = isCriticalEdge ? '#f43f5e' : '#94a3b8'; // Rose pour chemin critique, gris pour normal
-          const midX = startX + 15; // Point d'inflexion
+                {/* Marge Libre (Ligne pointillée) */}
+                {freeMarginWidth > 0 && (
+                  <line x1={barX + barWidth} y1={y + rowHeight/2} x2={barX + barWidth + freeMarginWidth} y2={y + rowHeight/2} stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" />
+                )}
 
-          return (
-            <g key={`dep-${dep.id}`}>
+                {/* Barre de durée */}
+                {!isMilestone ? (
+                  <g>
+                    <rect x={barX} y={y + 10} width={Math.max(barWidth, 4)} height={28} rx="6" className={`${isCritical ? 'fill-rose-500' : 'fill-indigo-500'} shadow-sm`} opacity="0.9" />
+                  </g>
+                ) : (
+                  // Jalon (Milestone)
+                  <polygon points={`${barX},${y+10} ${barX+10},${y+24} ${barX},${y+38} ${barX-10},${y+24}`} className={`${isCritical ? 'fill-rose-500' : 'fill-indigo-500'}`} />
+                )}
+              </g>
+            );
+          })}
+
+          {/* Flèches de dépendances */}
+          {dependencies?.map((dep) => {
+            const sourceTask = sortedTasks.find(t => t.id === dep.sourceTaskId);
+            const targetTask = sortedTasks.find(t => t.id === dep.targetTaskId);
+            if (!sourceTask || !targetTask) return null;
+
+            const sourceIndex = sortedTasks.findIndex(t => t.id === dep.sourceTaskId);
+            const targetIndex = sortedTasks.findIndex(t => t.id === dep.targetTaskId);
+
+            const sourceEs = sourceTask.earliestStart || 0;
+            const sourceDuration = sourceTask.duration || 0;
+            const targetEs = targetTask.earliestStart || 0;
+
+            const startX = (sourceEs + sourceDuration) * dayWidth;
+            const startY = headerHeight + sourceIndex * rowHeight + rowHeight / 2;
+            
+            const endX = targetEs * dayWidth;
+            const endY = headerHeight + targetIndex * rowHeight + rowHeight / 2;
+
+            const isCriticalEdge = sourceTask.isCritical && targetTask.isCritical;
+            const strokeColor = isCriticalEdge ? '#f43f5e' : '#94a3b8';
+            const markerId = isCriticalEdge ? 'url(#arrowhead-critical)' : 'url(#arrowhead)';
+
+            let pathD = '';
+            
+            if (startX <= endX - 10) {
+              const midX = startX + 10;
+              pathD = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX - 2} ${endY}`;
+            } else {
+              const midX = startX + 10;
+              const backX = endX - 10;
+              const midY = startY + (endY - startY) / 2;
+              pathD = `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${midY} L ${backX} ${midY} L ${backX} ${endY} L ${endX - 2} ${endY}`;
+            }
+
+            return (
               <path 
-                d={`M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX - 5} ${endY}`} 
+                key={`dep-${dep.id}`}
+                d={pathD} 
                 fill="none" 
                 stroke={strokeColor} 
                 strokeWidth="1.5" 
-                strokeOpacity="0.6"
+                strokeOpacity="0.8"
+                markerEnd={markerId}
               />
-              <polygon 
-                points={`${endX - 5},${endY - 3} ${endX},${endY} ${endX - 5},${endY + 3}`} 
-                fill={strokeColor} 
-                opacity="0.8"
-              />
-            </g>
-          );
-        })}
-      </svg>
+            );
+          })}
+        </svg>
+      </div>
     </div>
   );
 }

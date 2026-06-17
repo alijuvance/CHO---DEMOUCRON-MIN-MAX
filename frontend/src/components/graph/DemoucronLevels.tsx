@@ -41,23 +41,23 @@ export default function DemoucronLevels() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col">
         {levels.map((lvl) => (
-          <div key={lvl.level} className="flex flex-col sm:flex-row gap-4 items-start sm:items-stretch bg-white border border-gray-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-center bg-indigo-50 text-indigo-700 font-bold w-16 sm:w-24 shrink-0 rounded-lg py-4">
-              Niveau {lvl.level}
+          <div key={lvl.level} className="flex flex-col sm:flex-row gap-6 items-start sm:items-center py-6 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors px-4 rounded-xl sm:rounded-none">
+            <div className="w-24 shrink-0 flex flex-row sm:flex-col items-baseline sm:items-start gap-2 sm:gap-0">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Niveau</span>
+              <div className="text-3xl font-light text-gray-800 tabular-nums tracking-tight">{lvl.level}</div>
             </div>
             
             <div className="flex flex-wrap gap-3 flex-1 items-center">
               {lvl.tasks.map(t => (
-                <div key={t.id} className={`flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium ${t.isCritical ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-gray-200 bg-white text-gray-700'}`}>
-                  <span className="font-bold">{t.name}</span>
-                  <span className="text-xs opacity-60">({t.duration}j)</span>
+                <div key={t.id} className={`flex items-center gap-2 px-4 py-1.5 border rounded-md text-sm transition-all duration-300 ${t.isCritical ? 'border-rose-200/80 bg-white text-rose-700 shadow-[0_2px_10px_-3px_rgba(244,63,94,0.15)] hover:shadow-[0_4px_15px_-3px_rgba(244,63,94,0.25)] hover:border-rose-300' : 'border-gray-200/80 bg-white text-gray-600 hover:border-gray-300 hover:shadow-sm'}`}>
+                  <span className="font-semibold tracking-wide">{t.name}</span>
+                  <span className="text-xs text-gray-400 font-medium">({t.duration}j)</span>
                   {t.isCritical && (
-                    <span className="flex h-2 w-2 relative">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                    </span>
+                    <svg className="w-3.5 h-3.5 text-rose-500 ml-0.5 drop-shadow-sm" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                    </svg>
                   )}
                 </div>
               ))}
